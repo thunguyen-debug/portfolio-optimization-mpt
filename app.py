@@ -1,7 +1,7 @@
 """
 Portfolio Optimizer Dashboard
-Institutional-grade mean-variance optimization with interactive interface
-Built for recruiting, suitable for production use
+Modern fintech design inspired by Robinhood
+Institutional-grade mean-variance optimization
 
 Author: Thu Nguyen
 GitHub: github.com/thunguyen-debug
@@ -26,9 +26,115 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+css = """
+<style>
+    * {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    body, [data-testid="stAppViewContainer"] {
+        background-color: #ffffff;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #fafbfc;
+        border-right: 1px solid #e5e7eb;
+    }
+    
+    h1 {
+        color: #111827;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        letter-spacing: -1px;
+    }
+    
+    h2 {
+        color: #1f2937;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1.25rem;
+        letter-spacing: -0.5px;
+    }
+    
+    h3 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+    
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #111827;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    [data-testid="stMetricDelta"] {
+        color: #10b981;
+    }
+    
+    [data-testid="stDataFrame"] {
+        font-size: 0.95rem;
+    }
+    
+    [data-testid="stDataFrameResizable"] {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    [data-testid="stDivider"] {
+        margin: 2rem 0;
+        border-color: #e5e7eb;
+    }
+    
+    .stButton > button {
+        background-color: #10b981;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    
+    .stButton > button:hover {
+        background-color: #059669;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .stSelectbox, .stMultiSelect, .stSlider, .stRadio {
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    [data-testid="stAlert"] {
+        border-radius: 8px;
+        padding: 1rem;
+    }
+</style>
+"""
+
+st.markdown(css, unsafe_allow_html=True)
+
 @st.cache_data
 def generate_sample_data(tickers, days=1825):
-    """Generate realistic sample data for demonstration"""
     np.random.seed(42)
     dates = pd.date_range(end=datetime.now(), periods=days, freq='D')
     
@@ -56,75 +162,75 @@ def generate_sample_data(tickers, days=1825):
     
     return pd.DataFrame(data, index=dates)
 
-st.sidebar.markdown("## Portfolio Settings")
-st.sidebar.markdown("---")
-
-data_source = st.sidebar.radio(
-    "Data Source",
-    ["Historical (Yahoo Finance)", "Sample Data (Demo)", "Upload CSV"],
-    help="Use historical data from Yahoo Finance, sample data, or upload your own CSV"
-)
-
-if data_source == "Historical (Yahoo Finance)" or data_source == "Sample Data (Demo)":
-    available_assets = {
-        'US Equities': 'SPY',
-        'International Equities': 'EFA',
-        'Emerging Markets': 'EEM',
-        'US Bonds': 'BND',
-        'International Bonds': 'BNDX',
-        'Real Estate (REITs)': 'VNQ',
-        'Commodities': 'GSG',
-        'Gold': 'GLD'
-    }
+with st.sidebar:
+    st.markdown("### Settings")
+    st.divider()
     
-    selected_assets = st.sidebar.multiselect(
-        "Select Assets",
-        list(available_assets.keys()),
-        default=['US Equities', 'US Bonds', 'International Equities'],
-        help="Choose which asset classes to include"
+    data_source = st.radio(
+        "Data Source",
+        ["Historical (Yahoo Finance)", "Sample Data (Demo)", "Upload CSV"],
+        label_visibility="collapsed"
     )
     
-    tickers = [available_assets[asset] for asset in selected_assets]
+    if data_source == "Historical (Yahoo Finance)" or data_source == "Sample Data (Demo)":
+        available_assets = {
+            'US Equities': 'SPY',
+            'International Equities': 'EFA',
+            'Emerging Markets': 'EEM',
+            'US Bonds': 'BND',
+            'International Bonds': 'BNDX',
+            'Real Estate (REITs)': 'VNQ',
+            'Commodities': 'GSG',
+            'Gold': 'GLD'
+        }
+        
+        selected_assets = st.multiselect(
+            "Assets",
+            list(available_assets.keys()),
+            default=['US Equities', 'US Bonds', 'International Equities'],
+            label_visibility="collapsed"
+        )
+        
+        tickers = [available_assets[asset] for asset in selected_assets]
+        
+        time_period = st.selectbox(
+            "Period",
+            ["1 Year", "3 Years", "5 Years", "10 Years"],
+            index=2,
+            label_visibility="collapsed"
+        )
+        
+        period_map = {
+            "1 Year": 1 * 365,
+            "3 Years": 3 * 365,
+            "5 Years": 5 * 365,
+            "10 Years": 10 * 365
+        }
+        
+        days_back = period_map[time_period]
+        
+    else:
+        uploaded_file = st.file_uploader("Upload CSV", type=['csv'], label_visibility="collapsed")
+        tickers = None
     
-    time_period = st.sidebar.selectbox(
-        "Historical Period",
-        ["1 Year", "3 Years", "5 Years", "10 Years"],
-        index=2,
-        help="How much historical data to use for analysis"
+    st.divider()
+    
+    st.markdown("### Optimization")
+    
+    rf_rate = st.slider(
+        "Risk-Free Rate (%)",
+        min_value=0.0,
+        max_value=10.0,
+        value=4.5,
+        step=0.1,
+        label_visibility="collapsed"
+    ) / 100
+    
+    cov_method = st.selectbox(
+        "Covariance",
+        ["Sample", "Ledoit-Wolf Shrinkage"],
+        label_visibility="collapsed"
     )
-    
-    period_map = {
-        "1 Year": 1 * 365,
-        "3 Years": 3 * 365,
-        "5 Years": 5 * 365,
-        "10 Years": 10 * 365
-    }
-    
-    days_back = period_map[time_period]
-    
-else:
-    uploaded_file = st.sidebar.file_uploader(
-        "Upload CSV (returns data)",
-        type=['csv'],
-        help="CSV with date index and asset columns"
-    )
-    tickers = None
-
-st.sidebar.markdown("### Optimization Parameters")
-rf_rate = st.sidebar.slider(
-    "Risk-Free Rate (%)",
-    min_value=0.0,
-    max_value=10.0,
-    value=4.5,
-    step=0.1,
-    help="Current 10-year US Treasury yield"
-) / 100
-
-cov_method = st.sidebar.selectbox(
-    "Covariance Estimation",
-    ["Sample", "Ledoit-Wolf Shrinkage"],
-    help="Ledoit-Wolf is more robust, especially for small samples"
-)
 
 @st.cache_data
 def load_data(tickers, days_back):
@@ -240,80 +346,79 @@ def compute_efficient_frontier(returns, cov_matrix, rf_rate, n_points=80):
     
     return np.array(frontier_returns), np.array(frontier_vols)
 
-st.markdown("# Portfolio Optimizer Dashboard")
-st.markdown("Institutional-grade mean-variance optimization & efficient frontier analysis")
+st.markdown("# Portfolio Optimizer")
+st.markdown("Institutional-grade portfolio optimization")
 
 if data_source == "Historical (Yahoo Finance)":
     if not tickers:
-        st.warning("Please select at least one asset from the sidebar")
+        st.warning("Select at least one asset from sidebar")
         st.stop()
     
-    with st.spinner("Loading historical data..."):
+    with st.spinner("Loading data..."):
         try:
             data, successful_tickers = load_data(tickers, days_back)
             if data is None or len(data) == 0:
-                st.warning("Could not download from Yahoo Finance. Using sample data instead...")
+                st.info("Using sample data")
                 data = generate_sample_data(tickers, days_back)
                 successful_tickers = tickers
             tickers = successful_tickers
         except:
-            st.warning("Using sample data for demonstration...")
+            st.info("Using sample data")
             data = generate_sample_data(tickers, days_back)
             
 elif data_source == "Sample Data (Demo)":
     if not tickers:
-        st.warning("Please select at least one asset from the sidebar")
+        st.warning("Select at least one asset from sidebar")
         st.stop()
-    
-    st.info("Using realistic sample data for demonstration")
+    st.info("Sample data")
     data = generate_sample_data(tickers, days_back)
     
 else:
     if uploaded_file is None:
-        st.warning("Please upload a CSV file")
+        st.warning("Upload a CSV file")
         st.stop()
     
     try:
         data = pd.read_csv(uploaded_file, index_col=0)
         tickers = list(data.columns)
     except Exception as e:
-        st.error(f"Error reading CSV file: {str(e)}")
+        st.error(f"Error: {str(e)}")
         st.stop()
 
 try:
     daily_returns, annual_returns, annual_vol, cov_matrix = compute_statistics(data)
 except Exception as e:
-    st.error(f"Error computing statistics: {str(e)}")
+    st.error(f"Error: {str(e)}")
     st.stop()
 
 if cov_method == "Ledoit-Wolf Shrinkage":
     try:
         cov_matrix = estimate_covariance_robust(daily_returns)
     except:
-        st.warning("Using sample covariance instead")
+        pass
 
-st.markdown("---")
-st.markdown("## Asset Class Summary")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Assets", len(tickers))
+with col2:
+    st.metric("Period", time_period)
+with col3:
+    st.metric("Risk-Free Rate", f"{rf_rate*100:.1f}%")
+
+st.divider()
+
+st.markdown("## Asset Summary")
 
 asset_summary = pd.DataFrame({
     'Asset': tickers,
-    'Annual Return': (annual_returns.values * 100).round(2),
-    'Annual Volatility': (annual_vol.values * 100).round(2),
-    'Sharpe Ratio': ((annual_returns.values - rf_rate) / annual_vol.values).round(3)
+    'Return %': (annual_returns.values * 100).round(2),
+    'Volatility %': (annual_vol.values * 100).round(2),
+    'Sharpe': ((annual_returns.values - rf_rate) / annual_vol.values).round(3)
 })
 
-col1, col2 = st.columns([2, 1])
-with col1:
-    st.dataframe(asset_summary, use_container_width=True, hide_index=True)
-with col2:
-    st.metric("Total Assets", len(tickers))
-    st.metric("Analysis Period", f"{time_period}")
-    st.metric("Risk-Free Rate", f"{rf_rate*100:.2f}%")
+st.dataframe(asset_summary, use_container_width=True, hide_index=True)
 
-st.markdown("---")
-st.markdown("## Portfolio Optimization")
-
-st.info("Computing optimal portfolios...")
+st.divider()
 
 try:
     min_var_weights = optimize_portfolio(annual_returns.values, cov_matrix.values, rf_rate, 'min_var')
@@ -322,43 +427,43 @@ try:
     ew_weights = np.array([1.0/len(tickers)]*len(tickers))
     
     if min_var_weights is None or max_sharpe_weights is None:
-        st.error("Could not compute optimal portfolios.")
+        st.error("Could not compute optimal portfolios")
         st.stop()
     
 except Exception as e:
-    st.error(f"Error in portfolio optimization: {str(e)}")
+    st.error(f"Error: {str(e)}")
     st.stop()
 
 def get_portfolio_stats(weights, name):
     ret, vol, sharpe = portfolio_stats(weights, annual_returns.values, cov_matrix.values, rf_rate)
     return {
         'Strategy': name,
-        'Return (%)': ret * 100,
-        'Volatility (%)': vol * 100,
-        'Sharpe Ratio': sharpe,
-        'Return/Risk': (ret / vol) if vol > 0 else 0
+        'Return %': ret * 100,
+        'Volatility %': vol * 100,
+        'Sharpe': sharpe
     }
 
 results = [
-    get_portfolio_stats(min_var_weights, 'Minimum Variance'),
-    get_portfolio_stats(max_sharpe_weights, 'Maximum Sharpe'),
+    get_portfolio_stats(min_var_weights, 'Min Variance'),
+    get_portfolio_stats(max_sharpe_weights, 'Max Sharpe'),
     get_portfolio_stats(rp_weights, 'Risk Parity'),
     get_portfolio_stats(ew_weights, 'Equal Weight')
 ]
 
 results_df = pd.DataFrame(results)
 
-st.markdown("### Portfolio Optimization Results")
+st.markdown("## Optimization Results")
 st.dataframe(results_df.set_index('Strategy'), use_container_width=True)
 
-st.markdown("---")
-st.markdown("## Portfolio Allocations")
+st.divider()
+
+st.markdown("## Allocations")
 
 col1, col2, col3, col4 = st.columns(4)
 
 portfolios = [
-    (min_var_weights, 'Minimum Variance', col1),
-    (max_sharpe_weights, 'Maximum Sharpe', col2),
+    (min_var_weights, 'Min Variance', col1),
+    (max_sharpe_weights, 'Max Sharpe', col2),
     (rp_weights, 'Risk Parity', col3),
     (ew_weights, 'Equal Weight', col4)
 ]
@@ -366,40 +471,49 @@ portfolios = [
 for weights, name, col in portfolios:
     with col:
         allocation = pd.DataFrame({'Asset': tickers, 'Weight': (weights * 100).round(2)})
-        allocation = allocation[allocation['Weight'] > 0.1]
+        allocation = allocation[allocation['Weight'] > 0.1].sort_values('Weight', ascending=False)
         
-        fig = go.Figure(data=[go.Pie(labels=allocation['Asset'], values=allocation['Weight'], textposition='auto')])
-        fig.update_layout(title=name, height=400, margin=dict(l=0, r=0, t=30, b=0))
+        fig = go.Figure(data=[go.Pie(labels=allocation['Asset'], values=allocation['Weight'], 
+                                     textinfo='label+percent', marker=dict(
+                                         colors=['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']
+                                     ))])
+        fig.update_layout(title=name, height=360, margin=dict(l=0, r=0, t=40, b=0), 
+                         font=dict(size=11), showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("---")
-st.markdown("## Efficient Frontier Analysis")
+st.divider()
 
-st.info("Computing efficient frontier...")
+st.markdown("## Efficient Frontier")
 
 try:
-    frontier_returns, frontier_vols = compute_efficient_frontier(annual_returns.values, cov_matrix.values, rf_rate, n_points=80)
+    frontier_returns, frontier_vols = compute_efficient_frontier(annual_returns.values, cov_matrix.values, rf_rate, n_points=100)
     
     fig = go.Figure()
     
-    fig.add_trace(go.Scatter(x=frontier_vols*100, y=frontier_returns*100, mode='lines', name='Efficient Frontier',
-                            line=dict(color='#1f77b4', width=3)))
+    fig.add_trace(go.Scatter(x=frontier_vols*100, y=frontier_returns*100, mode='lines', 
+                            name='Frontier', line=dict(color='#10b981', width=3),
+                            hovertemplate='<b>Volatility:</b> %{x:.1f}%<br><b>Return:</b> %{y:.1f}%<extra></extra>'))
     
     for i, ticker in enumerate(tickers):
-        fig.add_trace(go.Scatter(x=[annual_vol.values[i]*100], y=[annual_returns.values[i]*100], mode='markers+text',
-                                name=ticker, marker=dict(size=10, opacity=0.7), text=[ticker], textposition='top center'))
+        fig.add_trace(go.Scatter(x=[annual_vol.values[i]*100], y=[annual_returns.values[i]*100], 
+                                mode='markers', name=ticker, marker=dict(size=12, opacity=0.7),
+                                hovertemplate=f'<b>{ticker}</b><br>Vol: %{{x:.1f}}%<br>Return: %{{y:.1f}}%<extra></extra>',
+                                showlegend=True))
     
     optimized = [
-        (min_var_weights, 'Min Variance', '#ff7f0e'),
-        (max_sharpe_weights, 'Max Sharpe', '#2ca02c'),
-        (rp_weights, 'Risk Parity', '#d62728'),
-        (ew_weights, 'Equal Weight', '#9467bd')
+        (min_var_weights, 'Min Var', '#3b82f6'),
+        (max_sharpe_weights, 'Max Sharpe', '#ef4444'),
+        (rp_weights, 'Risk Par', '#f59e0b'),
+        (ew_weights, 'Eq Weight', '#8b5cf6')
     ]
     
-    for weights, name, color in optimized:
+    for weights, label, color in optimized:
         ret, vol, sharpe = portfolio_stats(weights, annual_returns.values, cov_matrix.values, rf_rate)
-        fig.add_trace(go.Scatter(x=[vol*100], y=[ret*100], mode='markers+text', name=name,
-                                marker=dict(size=15, symbol='star', color=color), text=[name], textposition='top center'))
+        fig.add_trace(go.Scatter(x=[vol*100], y=[ret*100], mode='markers', name=label,
+                                marker=dict(size=20, symbol='star', color=color, 
+                                           line=dict(color='white', width=2)),
+                                hovertemplate=f'<b>{label}</b><br>Vol: %{{x:.1f}}%<br>Return: %{{y:.1f}}%<br>Sharpe: {sharpe:.3f}<extra></extra>',
+                                showlegend=True))
     
     if len(frontier_vols) > 0:
         max_vol = frontier_vols.max()
@@ -407,115 +521,124 @@ try:
         sharpe_max = portfolio_stats(max_sharpe_weights, annual_returns.values, cov_matrix.values, rf_rate)[2]
         cal_returns = rf_rate + sharpe_max * cal_vols
         
-        fig.add_trace(go.Scatter(x=cal_vols*100, y=cal_returns*100, mode='lines', name='Capital Allocation Line',
-                                line=dict(color='gray', width=2, dash='dash')))
+        fig.add_trace(go.Scatter(x=cal_vols*100, y=cal_returns*100, mode='lines', 
+                                name='CAL', line=dict(color='#9ca3af', width=2, dash='dash'),
+                                hovertemplate='Vol: %{x:.1f}%<br>Return: %{y:.1f}%<extra></extra>'))
     
-    fig.update_layout(title='Efficient Frontier with Optimized Portfolios', xaxis_title='Annual Volatility (%)',
-                     yaxis_title='Annual Return (%)', height=600, hovermode='closest')
+    fig.update_layout(
+        title='Efficient Frontier',
+        xaxis_title='Annual Volatility (%)',
+        yaxis_title='Annual Return (%)',
+        height=650,
+        hovermode='closest',
+        template='plotly_white',
+        font=dict(size=11),
+        plot_bgcolor='#f9fafb',
+        paper_bgcolor='white'
+    )
     
     st.plotly_chart(fig, use_container_width=True)
     
 except Exception as e:
     st.error(f"Error: {str(e)}")
 
-st.markdown("---")
+st.divider()
+
 st.markdown("## Risk Attribution")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Maximum Sharpe Portfolio")
+    st.markdown("### Max Sharpe")
     try:
         port_vol_ms = portfolio_stats(max_sharpe_weights, annual_returns.values, cov_matrix.values, rf_rate)[1]
         marginal_contrib_ms = np.dot(cov_matrix.values, max_sharpe_weights)
         rc_ms = max_sharpe_weights * marginal_contrib_ms / (port_vol_ms + 1e-10)
         
-        rc_df_ms = pd.DataFrame({'Asset': tickers, 'Risk Contribution (%)': (rc_ms * 100).round(2)})
-        fig_rc_ms = px.bar(rc_df_ms, x='Asset', y='Risk Contribution (%)', color='Risk Contribution (%)',
-                          color_continuous_scale='Blues')
-        fig_rc_ms.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig_rc_ms, use_container_width=True)
+        rc_df_ms = pd.DataFrame({'Asset': tickers, 'Contribution %': (rc_ms * 100).round(2)})
+        rc_df_ms = rc_df_ms.sort_values('Contribution %', ascending=True)
+        
+        fig_rc = px.bar(rc_df_ms, y='Asset', x='Contribution %', orientation='h',
+                       color='Contribution %', color_continuous_scale='Blues',
+                       showlegend=False)
+        fig_rc.update_layout(height=320, template='plotly_white', font=dict(size=11),
+                            plot_bgcolor='#f9fafb')
+        st.plotly_chart(fig_rc, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
 with col2:
-    st.subheader("Risk Parity Portfolio")
+    st.markdown("### Risk Parity")
     try:
         port_vol_rp = portfolio_stats(rp_weights, annual_returns.values, cov_matrix.values, rf_rate)[1]
         marginal_contrib_rp = np.dot(cov_matrix.values, rp_weights)
         rc_rp = rp_weights * marginal_contrib_rp / (port_vol_rp + 1e-10)
         
-        rc_df_rp = pd.DataFrame({'Asset': tickers, 'Risk Contribution (%)': (rc_rp * 100).round(2)})
-        fig_rc_rp = px.bar(rc_df_rp, x='Asset', y='Risk Contribution (%)', color='Risk Contribution (%)',
-                          color_continuous_scale='Greens')
-        fig_rc_rp.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig_rc_rp, use_container_width=True)
+        rc_df_rp = pd.DataFrame({'Asset': tickers, 'Contribution %': (rc_rp * 100).round(2)})
+        rc_df_rp = rc_df_rp.sort_values('Contribution %', ascending=True)
+        
+        fig_rc = px.bar(rc_df_rp, y='Asset', x='Contribution %', orientation='h',
+                       color='Contribution %', color_continuous_scale='Greens',
+                       showlegend=False)
+        fig_rc.update_layout(height=320, template='plotly_white', font=dict(size=11),
+                            plot_bgcolor='#f9fafb')
+        st.plotly_chart(fig_rc, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {str(e)}")
 
-st.markdown("---")
-st.markdown("## Asset Correlations")
+st.divider()
+
+st.markdown("## Correlations")
 
 try:
-    fig_cov = go.Figure(data=go.Heatmap(z=cov_matrix.values, x=tickers, y=tickers, colorscale='RdBu', zmid=0,
-                                       text=np.round(cov_matrix.values, 3), texttemplate='%{text:.2f}',
-                                       textfont={"size": 10}, colorbar=dict(title="Covariance")))
+    corr_matrix = daily_returns.corr()
     
-    fig_cov.update_layout(title='Covariance Matrix (Annualized)', height=500)
+    fig_corr = go.Figure(data=go.Heatmap(z=corr_matrix.values, x=tickers, y=tickers, 
+                                         colorscale='RdBu', zmid=0, text=np.round(corr_matrix.values, 2),
+                                         texttemplate='%{text:.2f}', textfont={"size": 11},
+                                         colorbar=dict(title="Correlation", thickness=15)))
     
-    st.plotly_chart(fig_cov, use_container_width=True)
+    fig_corr.update_layout(title='Correlation Matrix', height=500, template='plotly_white',
+                          font=dict(size=11))
+    
+    st.plotly_chart(fig_corr, use_container_width=True)
 except Exception as e:
     st.error(f"Error: {str(e)}")
 
-st.markdown("---")
-st.markdown("## Download Results")
+st.divider()
+
+st.markdown("## Downloads")
 
 try:
     download_data = pd.DataFrame({
-        'Strategy': ['Minimum Variance', 'Maximum Sharpe', 'Risk Parity', 'Equal Weight'],
-        'Annual Return (%)': results_df['Return (%)'].round(2),
-        'Annual Volatility (%)': results_df['Volatility (%)'].round(2),
-        'Sharpe Ratio': results_df['Sharpe Ratio'].round(3)
+        'Strategy': ['Min Variance', 'Max Sharpe', 'Risk Parity', 'Equal Weight'],
+        'Return %': results_df['Return %'].round(2),
+        'Volatility %': results_df['Volatility %'].round(2),
+        'Sharpe': results_df['Sharpe'].round(3)
     })
     
     allocations_download = pd.concat([
-        pd.DataFrame({'Strategy': 'Minimum Variance', 'Asset': tickers, 'Weight (%)': (min_var_weights*100).round(2)}),
-        pd.DataFrame({'Strategy': 'Maximum Sharpe', 'Asset': tickers, 'Weight (%)': (max_sharpe_weights*100).round(2)}),
-        pd.DataFrame({'Strategy': 'Risk Parity', 'Asset': tickers, 'Weight (%)': (rp_weights*100).round(2)}),
-        pd.DataFrame({'Strategy': 'Equal Weight', 'Asset': tickers, 'Weight (%)': (ew_weights*100).round(2)})
+        pd.DataFrame({'Strategy': 'Min Variance', 'Asset': tickers, 'Weight %': (min_var_weights*100).round(2)}),
+        pd.DataFrame({'Strategy': 'Max Sharpe', 'Asset': tickers, 'Weight %': (max_sharpe_weights*100).round(2)}),
+        pd.DataFrame({'Strategy': 'Risk Parity', 'Asset': tickers, 'Weight %': (rp_weights*100).round(2)}),
+        pd.DataFrame({'Strategy': 'Equal Weight', 'Asset': tickers, 'Weight %': (ew_weights*100).round(2)})
     ])
     
     col1, col2 = st.columns(2)
     
     with col1:
         csv1 = download_data.to_csv(index=False)
-        st.download_button(label="Download Performance Metrics", data=csv1, file_name="portfolio_performance.csv", mime="text/csv")
+        st.download_button(label="Performance Metrics", data=csv1, file_name="metrics.csv", mime="text/csv")
     
     with col2:
         csv2 = allocations_download.to_csv(index=False)
-        st.download_button(label="Download Allocations", data=csv2, file_name="portfolio_allocations.csv", mime="text/csv")
+        st.download_button(label="Allocations", data=csv2, file_name="allocations.csv", mime="text/csv")
 except Exception as e:
     st.error(f"Error: {str(e)}")
 
-st.markdown("---")
+st.divider()
+
 st.markdown("""
-### About This Dashboard
-
-Institutional-grade portfolio optimization engine implementing:
-- Markowitz mean-variance framework
-- Efficient frontier generation
-- Maximum Sharpe ratio optimization
-- Minimum variance allocation
-- Risk parity methodology
-
-Used by BlackRock, Vanguard, Bridgewater, Citadel.
-
 ---
-
-Built by: Thu Nguyen | Target: Sydney Finance (IB/PE/Quant)  
-GitHub: github.com/thunguyen-debug  
-Email: thunguyen5260@gmail.com | LinkedIn: linkedin.com/in/thu-nguyen-00nvtt
+Built by Thu Nguyen | Github: github.com/thunguyen-debug | Email: thunguyen5260@gmail.com
 """)
-
-st.markdown("---")
-st.success("Dashboard loaded successfully")
