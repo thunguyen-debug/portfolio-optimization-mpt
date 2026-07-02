@@ -26,113 +26,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-css = """
-<style>
-    * {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    
-    body, [data-testid="stAppViewContainer"] {
-        background-color: #ffffff;
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #fafbfc;
-        border-right: 1px solid #e5e7eb;
-    }
-    
-    h1 {
-        color: #111827;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        letter-spacing: -1px;
-    }
-    
-    h2 {
-        color: #1f2937;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-top: 2rem;
-        margin-bottom: 1.25rem;
-        letter-spacing: -0.5px;
-    }
-    
-    h3 {
-        color: #374151;
-        font-size: 1.125rem;
-        font-weight: 600;
-    }
-    
-    [data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #111827;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-size: 0.85rem;
-        color: #6b7280;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-    
-    [data-testid="stMetricDelta"] {
-        color: #10b981;
-    }
-    
-    [data-testid="stDataFrame"] {
-        font-size: 0.95rem;
-    }
-    
-    [data-testid="stDataFrameResizable"] {
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    
-    [data-testid="stDivider"] {
-        margin: 2rem 0;
-        border-color: #e5e7eb;
-    }
-    
-    .stButton > button {
-        background-color: #10b981;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        padding: 0.75rem 1.5rem;
-        transition: all 0.3s ease;
-        font-size: 0.95rem;
-    }
-    
-    .stButton > button:hover {
-        background-color: #059669;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    
-    .stSelectbox, .stMultiSelect, .stSlider, .stRadio {
-        margin-bottom: 1.5rem;
-    }
-    
-    .metric-row {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    [data-testid="stAlert"] {
-        border-radius: 8px;
-        padding: 1rem;
-    }
-</style>
-"""
-
-st.markdown(css, unsafe_allow_html=True)
-
 @st.cache_data
 def generate_sample_data(tickers, days=1825):
     np.random.seed(42)
@@ -559,10 +452,9 @@ with col1:
         rc_df_ms = rc_df_ms.sort_values('Contribution %', ascending=True)
         
         fig_rc = px.bar(rc_df_ms, y='Asset', x='Contribution %', orientation='h',
-                       color='Contribution %', color_continuous_scale='Blues',
-                       showlegend=False)
+                       color='Contribution %', color_continuous_scale='Blues')
         fig_rc.update_layout(height=320, template='plotly_white', font=dict(size=11),
-                            plot_bgcolor='#f9fafb')
+                            plot_bgcolor='#f9fafb', showlegend=False)
         st.plotly_chart(fig_rc, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {str(e)}")
@@ -578,10 +470,9 @@ with col2:
         rc_df_rp = rc_df_rp.sort_values('Contribution %', ascending=True)
         
         fig_rc = px.bar(rc_df_rp, y='Asset', x='Contribution %', orientation='h',
-                       color='Contribution %', color_continuous_scale='Greens',
-                       showlegend=False)
+                       color='Contribution %', color_continuous_scale='Greens')
         fig_rc.update_layout(height=320, template='plotly_white', font=dict(size=11),
-                            plot_bgcolor='#f9fafb')
+                            plot_bgcolor='#f9fafb', showlegend=False)
         st.plotly_chart(fig_rc, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {str(e)}")
